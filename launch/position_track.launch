@@ -1,0 +1,45 @@
+<launch>
+    <node pkg="hku_m100_landing" type="position_track_state_publisher" name="position_track_state_publisher_node" >
+    </node>
+
+      <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
+    </node>
+
+    <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" output="screen" >
+      <param name="node_name" value="apriltag_tracking_x_controller" />
+      <param name="Kp" value="10" />
+      <param name="Ki" value="0.15" />
+      <param name="Kd" value="30" />
+      <param name="upper_limit" value="1000" />
+      <param name="lower_limit" value="-1000" />
+      <param name="windup_limit" value="100" />
+      <param name="cutoff_frequency" value="20" />
+      <param name="diagnostic_period" value="0.25" />
+      <param name="max_loop_frequency" value="105.0" />
+      <param name="min_loop_frequency" value="95.0" />
+      <remap from="setpoint" to="/teamhku/position_track/setpoint_x" />
+      <param name="topic_from_plant" value="/teamhku/position_track/x_state" />
+      <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_x" />
+     </node>
+
+    <node ns="hku_m100_landing" name="position_track_pid_velocity_y_controller" pkg="pid" type="controller" output="screen" >
+      <param name="node_name" value="apriltag_tracking_y_controller" />
+      <param name="Kp" value="10" />
+      <param name="Ki" value="0.15" />
+      <param name="Kd" value="30" />
+      <param name="upper_limit" value="1000" />
+      <param name="lower_limit" value="-1000" />
+      <param name="windup_limit" value="100" />
+      <param name="cutoff_frequency" value="20" />
+      <param name="diagnostic_period" value="0.25" />
+      <param name="max_loop_frequency" value="105.0" />
+      <param name="min_loop_frequency" value="95.0" />
+      <remap from="setpoint" to="/teamhku/position_track/setpoint_y" />
+      <param name="topic_from_plant" value="/teamhku/position_track/y_state" />
+      <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_y" />
+    
+     </node>
+
+    <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" />
+
+</launch>

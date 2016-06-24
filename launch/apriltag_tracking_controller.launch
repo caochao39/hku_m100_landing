@@ -7,12 +7,12 @@
 
     <node ns="hku_m100_landing" name="velocity_x_controller" pkg="pid" type="controller" output="screen" >
       <param name="node_name" value="apriltag_tracking_x_controller" />
-      <param name="Kp" value="-0.3" />
-      <param name="Ki" value="-0.02" />
-      <param name="Kd" value="-0.02" />
+      <param name="Kp" value="-0.8" />
+      <param name="Ki" value="-0.0" />
+      <param name="Kd" value="-0.3" />
       <param name="upper_limit" value="5" />
       <param name="lower_limit" value="-5" />
-      <param name="windup_limit" value="10" />
+      <param name="windup_limit" value="5" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
@@ -24,12 +24,12 @@
 
     <node ns="hku_m100_landing" name="velocity_y_controller" pkg="pid" type="controller" output="screen" >
       <param name="node_name" value="apriltag_tracking_y_controller" />
-      <param name="Kp" value="-0.3" />
-      <param name="Ki" value="-0.02" />
-      <param name="Kd" value="-0.02" />
+      <param name="Kp" value="-0.8" />
+      <param name="Ki" value="-0.0" />
+      <param name="Kd" value="-0.3" />
       <param name="upper_limit" value="5" />
       <param name="lower_limit" value="-5" />
-      <param name="windup_limit" value="10" />
+      <param name="windup_limit" value="5" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />

@@ -11,6 +11,7 @@
 #include <geometry_msgs/PoseArray.h>
 
 #include <Eigen/Geometry> 
+#include <cmath>
 
 
 
@@ -51,9 +52,9 @@ void apriltagsPositionCallback(const geometry_msgs::PoseArray::ConstPtr& aprilta
 
 void gimbalOrientationCallback(const dji_sdk::Gimbal::ConstPtr& gimbal_ori_msg)
 {
-	gimbal_roll = gimbal_ori_msg->roll * 3.14159 / 180;
-	gimbal_yaw = gimbal_ori_msg->yaw * 3.14159 / 180;
-	gimbal_pitch = gimbal_ori_msg->pitch * 3.14159 / 180;
+	gimbal_roll = gimbal_ori_msg->roll * M_PI / 180;
+	gimbal_yaw = gimbal_ori_msg->yaw * M_PI / 180;
+	gimbal_pitch = gimbal_ori_msg->pitch * M_PI / 180;
 }
 
 int main(int argc, char **argv)
@@ -101,13 +102,14 @@ int main(int argc, char **argv)
 
 		//control
 		//for gazebo simulation
-		// yawAngle = Eigen::AngleAxisd(gimbal_yaw_tmp, Eigen::Vector3d::UnitZ());
-		// pitchAngle = Eigen::AngleAxisd(gimbal_pitch_tmp, Eigen::Vector3d::UnitY());
-		// rollAngle = Eigen::AngleAxisd(gimbal_roll_tmp, Eigen::Vector3d::UnitX());
+		yawAngle = Eigen::AngleAxisd(gimbal_yaw_tmp, Eigen::Vector3d::UnitZ());
+		pitchAngle = Eigen::AngleAxisd(gimbal_pitch_tmp, Eigen::Vector3d::UnitY());
+		rollAngle = Eigen::AngleAxisd(gimbal_roll_tmp, Eigen::Vector3d::UnitX());
 
-		yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
-		pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
-		rollAngle = Eigen::AngleAxisd(gimbal_roll, Eigen::Vector3d::UnitX());
+		//for real robot
+		// yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
+		// pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
+		// rollAngle = Eigen::AngleAxisd(gimbal_roll, Eigen::Vector3d::UnitX());
 
 		q = rollAngle * pitchAngle * yawAngle;
 

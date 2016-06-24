@@ -136,8 +136,13 @@ include_directories(
 
 ## Declare a C++ executable
 # add_executable(hku_m100_landing_node src/hku_m100_landing_node.cpp)
-add_executable(hku_m100_landing_preprocessor src/hku_m100_landing_preprocessor.cpp)
-add_executable(hku_m100_landing_controller src/hku_m100_landing_controller.cpp)
+#add_executable(hku_m100_landing_preprocessor src/hku_m100_landing_preprocessor.cpp)
+#add_executable(hku_m100_landing_controller src/hku_m100_landing_controller.cpp)
+
+
+add_executable(position_track_setpoint src/position_track_setpoint.cpp)
+add_executable(position_track_state_publisher src/position_track_state_publisher.cpp)
+add_executable(position_track_velocity_controller src/position_track_velocity_controller.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -149,11 +154,15 @@ add_executable(hku_m100_landing_controller src/hku_m100_landing_controller.cpp)
 # target_link_libraries(hku_m100_landing_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(hku_m100_landing_preprocessor
+target_link_libraries(position_track_setpoint
   ${catkin_LIBRARIES}
 )
 
-target_link_libraries(hku_m100_landing_controller
+target_link_libraries(position_track_state_publisher
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(position_track_velocity_controller
   ${catkin_LIBRARIES}
 )
 #############
