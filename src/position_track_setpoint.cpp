@@ -38,7 +38,7 @@ void apriltagsPositionCallback(const geometry_msgs::PoseArray::ConstPtr& aprilta
   else
   {
     tag_x = apriltag_pos_msg->poses[0].position.x;
-    tag_y = -apriltag_pos_msg->poses[0].position.y;
+    tag_y = apriltag_pos_msg->poses[0].position.y;
     tag_z = apriltag_pos_msg->poses[0].position.z;
 
 
@@ -67,7 +67,8 @@ int main(int argc, char **argv)
     sleep(1);
   }
 
-  nh.param<std::string>("tag_detection_topic", tag_detection_topic, "/apriltags_ros/tag_detections_pose");
+  nh.param<std::string>("/position_track_setpoint/tag_detection_topic", tag_detection_topic, "/apriltags_ros/tag_detections_pose");
+  ROS_INFO("Listening to apriltag detection topic: %s", tag_detection_topic.c_str());
 
   setpoint_x_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_x", 1);
   setpoint_y_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_y", 1);

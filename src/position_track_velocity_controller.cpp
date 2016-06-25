@@ -29,7 +29,7 @@ ros::ServiceClient sdk_permission_control_service;
 double velocity_control_effort_x;
 double velocity_control_effort_y;
 
-bool position_track_enabled = true;
+bool position_track_enabled = false;
 
 void velocityControlEffortXCallback(std_msgs::Float64 velocity_control_effort_x_msg)
 {

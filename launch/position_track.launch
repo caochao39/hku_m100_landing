@@ -5,14 +5,17 @@
       <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
     </node>
 
-    <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" output="screen" >
+    <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" >
       <param name="node_name" value="apriltag_tracking_x_controller" />
-      <param name="Kp" value="10" />
+<!--       <param name="Kp" value="10" />
       <param name="Ki" value="0.15" />
-      <param name="Kd" value="30" />
+      <param name="Kd" value="30" /> -->
+      <param name="Kp" value="0" />
+      <param name="Ki" value="0" />
+      <param name="Kd" value="0" />
       <param name="upper_limit" value="1000" />
       <param name="lower_limit" value="-1000" />
-      <param name="windup_limit" value="100" />
+      <param name="windup_limit" value="3" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
@@ -22,14 +25,14 @@
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_x" />
      </node>
 
-    <node ns="hku_m100_landing" name="position_track_pid_velocity_y_controller" pkg="pid" type="controller" output="screen" >
+    <node ns="hku_m100_landing" name="position_track_pid_velocity_y_controller" pkg="pid" type="controller"  >
       <param name="node_name" value="apriltag_tracking_y_controller" />
-      <param name="Kp" value="10" />
-      <param name="Ki" value="0.15" />
-      <param name="Kd" value="30" />
+      <param name="Kp" value="0" />
+      <param name="Ki" value="0" />
+      <param name="Kd" value="0" />
       <param name="upper_limit" value="1000" />
       <param name="lower_limit" value="-1000" />
-      <param name="windup_limit" value="100" />
+      <param name="windup_limit" value="3" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
@@ -40,6 +43,8 @@
     
      </node>
 
-    <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" />
+    <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" >
+    <param name="tag_detection_topic" value="/dji_sdk/class_36h11/tag_detections_pose" />
+    </node>
 
 </launch>
