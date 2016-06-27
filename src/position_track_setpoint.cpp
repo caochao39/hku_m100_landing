@@ -6,6 +6,9 @@
 #include <apriltags_ros/AprilTagDetectionArray.h>
 #include <dji_sdk/Gimbal.h>
 
+#include <apriltags/AprilTagDetections.h>
+
+
 #include <cmath>
 #include <Eigen/Geometry> 
 
@@ -29,21 +32,37 @@ double tag_z;
 
 std::string tag_detection_topic;
 
-void apriltagsPositionCallback(const geometry_msgs::PoseArray::ConstPtr& apriltag_pos_msg)
+// void apriltagsPositionCallback(const geometry_msgs::PoseArray::ConstPtr& apriltag_pos_msg)
+// {
+//   if(std::begin(apriltag_pos_msg->poses) == std::end(apriltag_pos_msg->poses))
+//   {
+//     return;
+//   }
+//   else
+//   {
+//     tag_x = apriltag_pos_msg->poses[0].position.x;
+//     tag_y = apriltag_pos_msg->poses[0].position.y;
+//     tag_z = apriltag_pos_msg->poses[0].position.z;
+
+
+//   }
+  
+// }
+
+
+void apriltagsPositionCallback(const apriltags::AprilTagDetections::ConstPtr& apriltag_pos_msg)
 {
-  if(std::begin(apriltag_pos_msg->poses) == std::end(apriltag_pos_msg->poses))
+  if(std::begin(apriltag_pos_msg->detections) == std::end(apriltag_pos_msg->detections))
   {
     return;
   }
   else
   {
-    tag_x = apriltag_pos_msg->poses[0].position.x;
-    tag_y = apriltag_pos_msg->poses[0].position.y;
-    tag_z = apriltag_pos_msg->poses[0].position.z;
-
+    tag_x = apriltag_pos_msg->detections[0].pose.position.x;
+    tag_y = apriltag_pos_msg->detections[0].pose.position.y;
+    tag_z = apriltag_pos_msg->detections[0].pose.position.z;
 
   }
-  
 }
 
 void gimbalOrientationCallback(const dji_sdk::Gimbal::ConstPtr& gimbal_ori_msg)
@@ -73,7 +92,9 @@ int main(int argc, char **argv)
   setpoint_x_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_x", 1);
   setpoint_y_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_y", 1);
 
+  // apriltags_pos_sub = nh.subscribe(tag_detection_topic, 1000, apriltagsPositionCallback);
   apriltags_pos_sub = nh.subscribe(tag_detection_topic, 1000, apriltagsPositionCallback);
+
   gimbal_ori_sub = nh.subscribe("/dji_sdk/gimbal", 1000, gimbalOrientationCallback);
 
 
