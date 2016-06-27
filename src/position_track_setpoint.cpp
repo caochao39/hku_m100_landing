@@ -36,7 +36,13 @@ double local_x;
 double local_y;
 double local_z;
 
+double setpoint_x = 0;
+double setpoint_y = 0;
+double setpoint_z = 0;
+
 std::string tag_detection_topic;
+
+bool found_tag = false;
 
 // void apriltagsPositionCallback(const geometry_msgs::PoseArray::ConstPtr& apriltag_pos_msg)
 // {
@@ -60,6 +66,7 @@ void apriltagsPositionCallback(const apriltags::AprilTagDetections::ConstPtr& ap
 {
   if(std::begin(apriltag_pos_msg->detections) == std::end(apriltag_pos_msg->detections))
   {
+    found_tag = false;
     return;
   }
   else
@@ -67,6 +74,7 @@ void apriltagsPositionCallback(const apriltags::AprilTagDetections::ConstPtr& ap
     tag_x = apriltag_pos_msg->detections[0].pose.position.x;
     tag_y = apriltag_pos_msg->detections[0].pose.position.y;
     tag_z = apriltag_pos_msg->detections[0].pose.position.z;
+    found_tag = true;
 
   }
 }
@@ -132,27 +140,50 @@ int main(int argc, char **argv)
 
   ros::Rate loop_rate(200); 
 
+  ros::spinOnce();
+  if(!found_tag)
+  {
+    setpoint_x = local_x;
+    setpoint_y = local_y;
+  }
+
   while (ros::ok())
   {
     ros::spinOnce();
 
-    yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
-    pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
-    rollAngle = Eigen::AngleAxisd(gimbal_roll, Eigen::Vector3d::UnitX());
+    if(found_tag == true)
+    {
+      yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
+      pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
+      rollAngle = Eigen::AngleAxisd(gimbal_roll, Eigen::Vector3d::UnitX());
 
-    q = rollAngle * pitchAngle * yawAngle;
+      q = rollAngle * pitchAngle * yawAngle;
 
-    T_c_f = q.matrix() * T_c_g;
+      T_c_f = q.matrix() * T_c_g;
 
-    P_c << tag_x, tag_y, tag_z;
+      P_c << tag_x, tag_y, tag_z;
 
-    P_f = T_c_f * P_c;
+      P_f = T_c_f * P_c;
 
-    setpoint_x_msg.data = P_f(0) + local_x;
-    setpoint_y_msg.data = P_f(1) + local_y;
+      setpoint_x = P_f(0) + local_x;
+      setpoint_y = P_f(1) + local_y;
 
-    setpoint_x_pub.publish(setpoint_x_msg);
-    setpoint_y_pub.publish(setpoint_y_msg);
+      setpoint_x_msg.data = setpoint_x;
+      setpoint_y_msg.data = setpoint_y;
+
+      setpoint_x_pub.publish(setpoint_x_msg);
+      setpoint_y_pub.publish(setpoint_y_msg);
+    }
+    else
+    {
+      setpoint_x_msg.data = setpoint_x;
+      setpoint_y_msg.data = setpoint_y;
+
+      setpoint_x_pub.publish(setpoint_x_msg);
+      setpoint_y_pub.publish(setpoint_y_msg);
+    }
+
+    
 
     loop_rate.sleep();
   }
