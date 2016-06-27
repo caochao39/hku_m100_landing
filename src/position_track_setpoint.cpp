@@ -5,6 +5,7 @@
 #include <apriltags_ros/AprilTagDetection.h>
 #include <apriltags_ros/AprilTagDetectionArray.h>
 #include <dji_sdk/Gimbal.h>
+#include <dji_sdk/LocalPosition.h>
 
 #include <apriltags/AprilTagDetections.h>
 
@@ -15,6 +16,7 @@
 
 ros::Subscriber apriltags_pos_sub;
 ros::Subscriber gimbal_ori_sub;
+ros::Subscriber local_position_subscriber;
 
 ros::Publisher setpoint_x_pub;
 ros::Publisher setpoint_y_pub;
@@ -29,6 +31,10 @@ double gimbal_pitch;
 double tag_x;
 double tag_y;
 double tag_z;
+
+double local_x;
+double local_y;
+double local_z;
 
 std::string tag_detection_topic;
 
@@ -72,7 +78,12 @@ void gimbalOrientationCallback(const dji_sdk::Gimbal::ConstPtr& gimbal_ori_msg)
   gimbal_pitch = gimbal_ori_msg->pitch * M_PI / 180;
 }
 
-
+void localPositionCallback(const dji_sdk::LocalPosition::ConstPtr& local_position_msg)
+{
+  local_x = local_position_msg->x;
+  local_y = local_position_msg->y;
+  local_z = local_position_msg->z;
+}
 
 int main(int argc, char **argv)
 {
@@ -97,6 +108,7 @@ int main(int argc, char **argv)
 
   gimbal_ori_sub = nh.subscribe("/dji_sdk/gimbal", 1000, gimbalOrientationCallback);
 
+  local_position_subscriber = nh.subscribe<dji_sdk::LocalPosition>("dji_sdk/local_position", 10, localPositionCallback);
 
   Eigen::Matrix3d T_c_g;
     T_c_g << 0, 0, 1,
@@ -136,8 +148,8 @@ int main(int argc, char **argv)
 
     P_f = T_c_f * P_c;
 
-    setpoint_x_msg.data = P_f(0);
-    setpoint_y_msg.data = P_f(1);
+    setpoint_x_msg.data = P_f(0) + local_x;
+    setpoint_y_msg.data = P_f(1) + local_y;
 
     setpoint_x_pub.publish(setpoint_x_msg);
     setpoint_y_pub.publish(setpoint_y_msg);
