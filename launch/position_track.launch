@@ -45,7 +45,7 @@
 
     <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" >
     <!-- <param name="tag_detection_topic" value="/dji_sdk/class_36h11/tag_detections_pose" /> -->
-    <param name="tag_detection_topic" value="/apriltags/detections" />
+    <param name="tag_detection_topic" value="/apriltags/36h11/detections" />
     
     </node>
 
