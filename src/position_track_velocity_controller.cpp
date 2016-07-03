@@ -6,6 +6,7 @@
 #include <dji_sdk/dji_sdk.h>
 #include <dji_sdk/GimbalAngleControl.h>
 #include <dji_sdk/GimbalSpeedControl.h>
+#include <dji_sdk/VelocityControl.h>
 
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
@@ -19,8 +20,9 @@
 
 ros::Subscriber velocity_control_x_sub;
 ros::Subscriber velocity_control_y_sub;
-
+ros::Subscriber velocity_control_yaw_sub;
 ros::Subscriber position_track_enable_sub;
+ros::Subscriber landing_condition_met_sub;
 
 ros::ServiceClient velocity_control_service;
 ros::ServiceClient sdk_permission_control_service;
@@ -28,8 +30,12 @@ ros::ServiceClient sdk_permission_control_service;
 
 double velocity_control_effort_x;
 double velocity_control_effort_y;
+double velocity_control_effort_yaw;
+
+const double descending_speed = -0.5;
 
 bool position_track_enabled = false;
+bool landing_condition_met = false;
 
 void velocityControlEffortXCallback(std_msgs::Float64 velocity_control_effort_x_msg)
 {
@@ -41,12 +47,21 @@ void velocityControlEffortYCallback(std_msgs::Float64 velocity_control_effort_y_
 	velocity_control_effort_y = velocity_control_effort_y_msg.data;
 }
 
+void velocityControlEffortYawCallback(std_msgs::Float64 velocity_control_effort_yaw_msg)
+{
+	velocity_control_effort_yaw = velocity_control_effort_yaw_msg.data;
+}
 
-void position_track_enable_callback(const std_msgs::Bool& position_track_enable_msg)
+
+void positionTrackEnableCallback(const std_msgs::Bool& position_track_enable_msg)
 {
   position_track_enabled = position_track_enable_msg.data;
 }
 
+void landingConditionMetCallback(const std_msgs::Bool& landing_condition_met_msg)
+{
+	landing_condition_met = landing_condition_met_msg.data;
+}
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "position_track_controller");
@@ -54,7 +69,9 @@ int main(int argc, char **argv)
 
 	velocity_control_x_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_x", 10, velocityControlEffortXCallback);
 	velocity_control_y_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_y", 10, velocityControlEffortYCallback);
-	position_track_enable_sub = nh.subscribe("/teamhku/position_track/position_track_enable", 1, position_track_enable_callback );
+	velocity_control_yaw_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_yaw", 10, velocityControlEffortYawCallback);
+	position_track_enable_sub = nh.subscribe("/teamhku/position_track/position_track_enable", 1, positionTrackEnableCallback );
+	landing_condition_met_sub = nh.subscribe("/teamhku/position_track/landing_condition_met", 1, landingConditionMetCallback );   
 	
 	velocity_control_service = nh.serviceClient<dji_sdk::VelocityControl>("dji_sdk/velocity_control");
 	sdk_permission_control_service = nh.serviceClient<dji_sdk::SDKPermissionControl>("dji_sdk/sdk_permission_control");
@@ -79,16 +96,33 @@ int main(int argc, char **argv)
 
 		if(position_track_enabled)
 		{
-			velocity_control.request.frame = frame;
-			velocity_control.request.vx = velocity_control_effort_x;
-			velocity_control.request.vy = velocity_control_effort_y;
-			velocity_control.request.vz = 0;
-			velocity_control.request.yawRate = yaw_rate;
-
-			if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
+			if(landing_condition_met)
 			{
-				ROS_ERROR("velocity control failed!");
+				velocity_control.request.frame = frame;
+				velocity_control.request.vx = velocity_control_effort_x;
+				velocity_control.request.vy = velocity_control_effort_y;
+				velocity_control.request.vz = descending_speed;
+				velocity_control.request.yawRate = velocity_control_effort_yaw;
+
+				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
+				{
+					ROS_ERROR("velocity control failed!");
+				}
 			}
+			else
+			{
+				velocity_control.request.frame = frame;
+				velocity_control.request.vx = velocity_control_effort_x;
+				velocity_control.request.vy = velocity_control_effort_y;
+				velocity_control.request.vz = 0;
+				velocity_control.request.yawRate = velocity_control_effort_yaw;
+
+				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
+				{
+					ROS_ERROR("velocity control failed!");
+				}
+			}
+			
 		}
 		else
 		{

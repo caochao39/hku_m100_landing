@@ -118,7 +118,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include/hku_m100_landing/)
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
@@ -140,9 +140,10 @@ include_directories(
 #add_executable(hku_m100_landing_controller src/hku_m100_landing_controller.cpp)
 
 
-add_executable(position_track_setpoint src/position_track_setpoint.cpp)
+add_executable(position_track_setpoint src/position_track_setpoint.cpp src/tag.cpp)
 add_executable(position_track_state_publisher src/position_track_state_publisher.cpp)
 add_executable(position_track_velocity_controller src/position_track_velocity_controller.cpp)
+add_executable(yaw_rate_test src/yaw_rate_test.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -163,6 +164,10 @@ target_link_libraries(position_track_state_publisher
 )
 
 target_link_libraries(position_track_velocity_controller
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(yaw_rate_test
   ${catkin_LIBRARIES}
 )
 #############
