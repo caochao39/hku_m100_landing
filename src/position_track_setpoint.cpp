@@ -54,6 +54,7 @@ Tag *tag_36h11_6;
 
 std::vector<Tag *> tags_16h5;
 std::vector<int> found_tag_id;
+std::vector<double> yaw_errors;
 
 std::string tag_16h5_detection_topic;
 std::string tag_36h11_detection_topic;
@@ -239,7 +240,9 @@ int main(int argc, char **argv)
 
       //get the averaging landing center position
       landing_center_position_sum = Eigen::Vector3d(0, 0, 0);
-      found_tag_count = 0;
+      found_tag_count = 0;  
+
+      
 
       for(int i = 0; i < tag_16h5_num; i++)
         {
@@ -264,16 +267,19 @@ int main(int argc, char **argv)
 
       //get the averaging landing center yaw error
       yaw_sum = 0;
-
+      yaw_errors.clear();
       for(int i = 0; i < tag_16h5_num; i++)
       {
         if(tags_16h5[i]->isFound())
           {
-            yaw_sum += tags_16h5[i]->getYawError();
+            // yaw_sum += tags_16h5[i]->getYawError();
+            yaw_errors.push_back(tags_16h5[i]->getYawError());
+            // std::cout << "id: " << i << " drone frame orientation: w: " << tags_16h5[i]->orientation_drone_frame_.w() << " x: " << tags_16h5[i]->orientation_drone_frame_.x() << " y: " << tags_16h5[i]->orientation_drone_frame_.y() << " z: " << tags_16h5[i]->orientation_drone_frame_.z() << std::endl;
             // std::cout << "id: " << i << " Yaw error: " << tags_16h5[i]->getYawError() / M_PI * 180 << std::endl;
+            // std::cout << "id: " << i << " euler angles: x: " << tags_16h5[i]->orientation_drone_frame_.toRotationMatrix().eulerAngles(0, 1, 2)(0) << " y: " << tags_16h5[i]->orientation_drone_frame_.toRotationMatrix().eulerAngles(0, 1, 2)(1) << " z: " << tags_16h5[i]->orientation_drone_frame_.toRotationMatrix().eulerAngles(0, 1, 2)(2) << std::endl;
           }
       }
-
+      // std::cout << std::endl;
       // for(int i = 0; i < tag_16h5_num; i++)
       // {
       //   if(tags_16h5[i]->isFound())
@@ -285,12 +291,14 @@ int main(int argc, char **argv)
       // std::cout << std::endl;
       if(tag_36h11_6->isFound())
         {
-          yaw_sum = tag_36h11_6->getYawError()/ M_PI * 180;
+          // yaw_sum = tag_36h11_6->getYawError();
+          yaw_errors.push_back(tag_36h11_6->getYawError());
         }
 
-      // std::cout << "36h11 yaw error: " << tag_36h11_6->getYawError() / M_PI * 180 << std::endl;
-      // average_yaw_error = yaw_sum / found_tag_count;
-      // std::cout << "16h5 average yaw error: " << average_yaw_error / M_PI * 180 << std::endl;
+      std::sort (yaw_errors.begin(), yaw_errors.end());
+      // average_yaw_error = (yaw_sum / found_tag_count) / M_PI * 180;
+      average_yaw_error = yaw_errors[found_tag_count / 2] / M_PI * 180;
+      // std::cout << "yaw error: " << average_yaw_error << std::endl;
 
       //check whether the landing condition is met
       if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
@@ -308,7 +316,7 @@ int main(int argc, char **argv)
         landing_condition_met_pub.publish(landing_condition_met_msg);
       }
 
-      error_yaw_msg.data = yaw_sum;
+      error_yaw_msg.data = average_yaw_error;
       error_yaw_pub.publish(error_yaw_msg);
 
       setpoint_x = average_landing_center_position(0) + local_x;
