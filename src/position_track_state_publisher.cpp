@@ -25,17 +25,18 @@ void localPosCallback(const dji_sdk::LocalPosition::ConstPtr& local_pos_msg)
 }
 
 
+
 int main(int argc, char **argv)
 {
 
-	ros::init(argc, argv, "position_track_preprocessor");
+	ros::init(argc, argv, "position_track_state_publisher");
 	ROS_INFO("Starting position publisher");
 
 	ros::NodeHandle nh;
 
 	while (ros::Time(0) == ros::Time::now())
 	{
-		ROS_INFO("Setpoint_node spinning waiting for time to become non-zero");
+		ROS_INFO("position_track_state_publisher spinning waiting for time to become non-zero");
 		sleep(1);
 	}
 

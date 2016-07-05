@@ -3,24 +3,26 @@
     </node>
 
       <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
-    </node>
+        
+      </node>
 
     <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" >
       <param name="node_name" value="apriltag_tracking_x_controller" />
 <!--       <param name="Kp" value="6" />
       <param name="Ki" value="0.3" />
       <param name="Kd" value="300" /> -->
-      <param name="Kp" value="1" />
+      <param name="Kp" value="0.6" />
       <param name="Ki" value="0.2" />
-      <param name="Kd" value="50" />
-      <param name="upper_limit" value="1000" />
-      <param name="lower_limit" value="-1000" />
-      <param name="windup_limit" value="200" />
+      <param name="Kd" value="80" />
+      <param name="converge_threshold" value="0.05" />
+      <param name="upper_limit" value="15" />
+      <param name="lower_limit" value="-15" />
+      <param name="windup_limit" value="20" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
       <param name="min_loop_frequency" value="95.0" />
-      <remap from="setpoint" to="/teamhku/position_track/filtered_setpoint_x" />
+      <remap from="setpoint" to="/teamhku/position_track/setpoint_x" />
       <param name="topic_from_plant" value="/teamhku/position_track/x_state" />
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_x" />
      </node>
@@ -30,66 +32,73 @@
 <!--       <param name="Kp" value="6" />
       <param name="Ki" value="0.3" />
       <param name="Kd" value="300" /> -->
-      <param name="Kp" value="1" />
+      <param name="Kp" value="0.6" />
       <param name="Ki" value="0.2" />
-      <param name="Kd" value="50" />
-      <param name="upper_limit" value="1000" />
-      <param name="lower_limit" value="-1000" />
-      <param name="windup_limit" value="200" />
+      <param name="Kd" value="80" />
+      <param name="converge_threshold" value="0.05" />
+      <param name="upper_limit" value="15" />
+      <param name="lower_limit" value="-15" />
+      <param name="windup_limit" value="20" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
       <param name="min_loop_frequency" value="95.0" />
-      <remap from="setpoint" to="/teamhku/position_track/filtered_setpoint_y" />
+      <remap from="setpoint" to="/teamhku/position_track/setpoint_y" />
       <param name="topic_from_plant" value="/teamhku/position_track/y_state" />
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_y" />
     </node>
     
     <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" >
-    <param name="tag_36h11_detection_topic" value="/apriltags/36h11/detections" />
-    <param name="tag_16h5_detection_topic" value="/apriltags/16h5/detections" />
-    
+      <param name="tag_36h11_detection_topic" value="/apriltags_ros/class_36h11/tag_detections" />
+      <param name="tag_16h5_detection_topic" value="/apriltags_ros/class_16h5/tag_detections" />
     </node>
 
 
 
     <node ns="hku_m100_landing" name="position_track_pid_yaw_controller" pkg="pid" type="controller" >
       <param name="node_name" value="apriltag_tracking_yaw_controller" />
+<!--       <param name="Kp" value="1" />
+      <param name="Ki" value="0.0" />
+      <param name="Kd" value="50" /> -->
       <param name="Kp" value="0.0" />
       <param name="Ki" value="0.0" />
       <param name="Kd" value="0.0" />
-      <param name="upper_limit" value="100" />
-      <param name="lower_limit" value="-100" />
+      <param name="converge_threshold" value="1" />
+      <param name="upper_limit" value="10" />
+      <param name="lower_limit" value="-10" />
       <param name="windup_limit" value="5" />
       <param name="cutoff_frequency" value="20" />
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
       <param name="min_loop_frequency" value="95.0" />
-      <remap from="setpoint" to="/teamhku/position_track/setpoint_yaw" />
+      <remap from="setpoint" to="/teamhku/position_track/filtered_setpoint_yaw" />
       <param name="topic_from_plant" value="/teamhku/position_track/yaw_state" />
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_yaw" />
      </node>
 
-
-
-
-
-
-
-
+<!-- kalman filters -->
     <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_x" output="screen">
-    <param name="input_topic" value="/teamhku/position_track/setpoint_x" />
-    <param name="output_topic" value="/teamhku/position_track/filtered_setpoint_x" />
-    <param name="Q" value="0.001" />
-    <param name="R" value="10" />
+    <param name="input_topic" value="/teamhku/position_track/x_state" />
+    <param name="output_topic" value="/teamhku/position_track/filtered_x_state" />
+    <param name="Q" value="0.00001" />
+    <param name="R" value="0.01" />
     <param name="x0" value="0" />
     </node>
 
     <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_y" output="screen">
-    <param name="input_topic" value="/teamhku/position_track/setpoint_y" />
-    <param name="output_topic" value="/teamhku/position_track/filtered_setpoint_y" />
+    <param name="input_topic" value="/teamhku/position_track/y_state" />
+    <param name="output_topic" value="/teamhku/position_track/filtered_y_state" />
+    <param name="Q" value="0.00001" />
+    <param name="R" value="0.01" />
+    <param name="x0" value="0" />
+    </node>
+
+
+    <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_yaw" output="screen">
+    <param name="input_topic" value="/teamhku/position_track/setpoint_yaw" />
+    <param name="output_topic" value="/teamhku/position_track/filtered_setpoint_yaw" />
     <param name="Q" value="0.001" />
-    <param name="R" value="10" />
+    <param name="R" value="1" />
     <param name="x0" value="0" />
     </node>
 

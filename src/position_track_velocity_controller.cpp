@@ -23,6 +23,7 @@ ros::Subscriber velocity_control_y_sub;
 ros::Subscriber velocity_control_yaw_sub;
 ros::Subscriber position_track_enable_sub;
 ros::Subscriber landing_condition_met_sub;
+ros::Subscriber relanding_condition_met_sub;
 
 ros::ServiceClient velocity_control_service;
 ros::ServiceClient sdk_permission_control_service;
@@ -33,9 +34,13 @@ double velocity_control_effort_y;
 double velocity_control_effort_yaw;
 
 const double descending_speed = -0.5;
+const double ascending_speed = 0.5;
 
 bool position_track_enabled = false;
 bool landing_condition_met = false;
+bool relanding_condition_met = false;
+
+std::string topic_from_controller;
 
 void velocityControlEffortXCallback(std_msgs::Float64 velocity_control_effort_x_msg)
 {
@@ -52,7 +57,6 @@ void velocityControlEffortYawCallback(std_msgs::Float64 velocity_control_effort_
 	velocity_control_effort_yaw = velocity_control_effort_yaw_msg.data;
 }
 
-
 void positionTrackEnableCallback(const std_msgs::Bool& position_track_enable_msg)
 {
   position_track_enabled = position_track_enable_msg.data;
@@ -62,17 +66,25 @@ void landingConditionMetCallback(const std_msgs::Bool& landing_condition_met_msg
 {
 	landing_condition_met = landing_condition_met_msg.data;
 }
+
+void relandingConditionMetCallback(const std_msgs::Bool& relanding_condition_met_msg)
+{
+	relanding_condition_met = relanding_condition_met_msg.data;
+}
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "position_track_controller");
 	ros::NodeHandle nh;
+
+	nh.param<std::string>("topic_from_controller", topic_from_controller, "/teamhku/position_track/velocity_control_effort_x");
 
 	velocity_control_x_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_x", 10, velocityControlEffortXCallback);
 	velocity_control_y_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_y", 10, velocityControlEffortYCallback);
 	velocity_control_yaw_sub = nh.subscribe("/teamhku/position_track/velocity_control_effort_yaw", 10, velocityControlEffortYawCallback);
 	position_track_enable_sub = nh.subscribe("/teamhku/position_track/position_track_enable", 1, positionTrackEnableCallback );
 	landing_condition_met_sub = nh.subscribe("/teamhku/position_track/landing_condition_met", 1, landingConditionMetCallback );   
-	
+	relanding_condition_met_sub = nh.subscribe("/teamhku/position_track/relanding_condition_met", 1, relandingConditionMetCallback );   
+
 	velocity_control_service = nh.serviceClient<dji_sdk::VelocityControl>("dji_sdk/velocity_control");
 	sdk_permission_control_service = nh.serviceClient<dji_sdk::SDKPermissionControl>("dji_sdk/sdk_permission_control");
 
@@ -102,6 +114,19 @@ int main(int argc, char **argv)
 				velocity_control.request.vx = velocity_control_effort_x;
 				velocity_control.request.vy = velocity_control_effort_y;
 				velocity_control.request.vz = descending_speed;
+				velocity_control.request.yawRate = velocity_control_effort_yaw;
+
+				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
+				{
+					ROS_ERROR("velocity control failed!");
+				}
+			}
+			else if(relanding_condition_met)
+			{
+				velocity_control.request.frame = frame;
+				velocity_control.request.vx = velocity_control_effort_x;
+				velocity_control.request.vy = velocity_control_effort_y;
+				velocity_control.request.vz = ascending_speed;
 				velocity_control.request.yawRate = velocity_control_effort_yaw;
 
 				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))

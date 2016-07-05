@@ -30,7 +30,8 @@ void Tag::setToLandingCenterTranslation(const Eigen::Vector3d trans)
 
 double Tag::getYawError()
 {
-	return orientation_drone_frame_.toRotationMatrix().eulerAngles(0, 1, 2)(2);
+	return atan2(2*(orientation_drone_frame_.w() * orientation_drone_frame_.z() + orientation_drone_frame_.x() * orientation_drone_frame_.y()), 1 - 2 * (orientation_drone_frame_.y() * orientation_drone_frame_.y() + orientation_drone_frame_.z() * orientation_drone_frame_.z()));
+	// return orientation_drone_frame_.toRotationMatrix().eulerAngles(0, 1, 2)(2);
 }
 
 void Tag::calculateDroneFramePosition(const Eigen::Matrix3d camera_to_drone_transformation)
