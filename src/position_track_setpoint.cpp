@@ -61,7 +61,7 @@ double setpoint_yaw = 0;
 const int tag_16h5_num = 7;
 double landing_threshold = 0.1;
 double reland_horizontal_threshold = 0.3;
-double reland_height_min_threshold = 0.2;
+double reland_height_min_threshold = 1.3;
 double reland_height_max_threshold = 2.5;
 double absolute_reland_height_min_threshold = 1.3;
 
@@ -82,6 +82,8 @@ std::string tag_36h11_detection_topic;
 
 bool found_36h11 = false;
 bool found_16h5 = false;
+
+bool first_start = true;
 
 bool landing_enabled = false;
 
@@ -232,7 +234,6 @@ void attitudeQuaternionCallback(const dji_sdk::AttitudeQuaternion::ConstPtr& att
   heading_q3 = attitude_quaternion_msg->q3;
 
   drone_heading = Eigen::Quaternion<double>(heading_q0, heading_q1, heading_q2, heading_q3);
-  // yaw_state = drone_heading.toRotationMatrix().eulerAngles(0, 1, 2)(2) / M_PI * 180;
   yaw_state = atan2(2*(heading_q0 * heading_q3 + heading_q1 * heading_q2), 1 - 2 * (heading_q2 * heading_q2 + heading_q3 * heading_q3)) / M_PI * 180;
 }
 
@@ -242,6 +243,49 @@ void landingEnableCallback(const std_msgs::Bool& landing_enable_msg)
 {
   landing_enabled = landing_enable_msg.data;
 
+}
+
+void descend()
+{
+  if(landing_enabled)
+  {
+    landing_condition_met_msg.data = true;
+    landing_condition_met_pub.publish(landing_condition_met_msg);
+
+    relanding_condition_met_msg.data = false;
+    relanding_condition_met_pub.publish(relanding_condition_met_msg);
+
+    relanding = false;
+    // std::cout << "descending" << std::endl;
+  }
+  
+}
+
+void ascend()
+{
+  if(landing_enabled)
+  {
+    landing_condition_met_msg.data = false;
+    landing_condition_met_pub.publish(landing_condition_met_msg);
+
+    relanding_condition_met_msg.data = true;
+    relanding_condition_met_pub.publish(relanding_condition_met_msg);
+
+    relanding = true;
+    // std::cout << "ascending" << std::endl;
+  }
+}
+
+void hover()
+{
+  landing_condition_met_msg.data = false;
+  landing_condition_met_pub.publish(landing_condition_met_msg);
+
+  relanding_condition_met_msg.data = false;
+  relanding_condition_met_pub.publish(relanding_condition_met_msg);
+
+  relanding = false;
+  // std::cout << "hovering" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -338,7 +382,7 @@ int main(int argc, char **argv)
 
     if(found_16h5 || found_36h11)
     {
-
+      first_start = false;
       yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
       pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
       rollAngle = Eigen::AngleAxisd(gimbal_roll, Eigen::Vector3d::UnitX());
@@ -361,7 +405,6 @@ int main(int argc, char **argv)
             tags_16h5[i]->calculateDroneFrameOrientation(camera_to_drone_transformation);
             landing_center_position = tags_16h5[i]->getLandingCenterPosition();
             landing_center_position_sum += landing_center_position;
-            // std::cout << "id: " << i << " landing center: x: " << tags_16h5[i]->getLandingCenterPosition().x() << " y: " << tags_16h5[i]->getLandingCenterPosition().y() << " z: " << tags_16h5[i]->getLandingCenterPosition().z() << std::endl; 
           }
         }
         if(tag_36h11_6->isFound())
@@ -370,10 +413,8 @@ int main(int argc, char **argv)
           tag_36h11_6->calculateDroneFramePosition(camera_to_drone_transformation);
           tag_36h11_6->calculateDroneFrameOrientation(camera_to_drone_transformation);
           landing_center_position_sum += tag_36h11_6->getLandingCenterPosition();
-          // std::cout << "36h11" <<" landing center: x: " << tag_36h11_6->getLandingCenterPosition().x() << " y: " << tag_36h11_6->getLandingCenterPosition().y() << " z: " << tag_36h11_6->getLandingCenterPosition().z() << std::endl; 
 
         }
-        // std::cout << std::endl;
         average_landing_center_position = landing_center_position_sum / found_tag_count;
 
       //get the averaging landing center yaw error
@@ -384,7 +425,6 @@ int main(int argc, char **argv)
         if(tags_16h5[i]->isFound())
           {
             yaw_errors.push_back(tags_16h5[i]->getYawError());
-            // std::cout << "16h5 tags id: " << i << " yaw error: " <<  tags_16h5[i]->getYawError() / M_PI * 180 << std::endl;
           }
       }
 
@@ -398,53 +438,78 @@ int main(int argc, char **argv)
         average_yaw_error = yaw_errors[found_tag_count / 2] / M_PI * 180;
       }
 
-      if(!found_16h5)
-      {
-        landing_threshold = 0.3;
-      }
-      else
+      //landing logic
+      if(found_16h5)
       {
         landing_threshold = 0.1;
-      }
-      //check whether the landing condition is met
-      if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
-      {
-        // std::cout << "local x: " << local_x << " target x: " << average_landing_center_position(0) << " local y: " << local_y << " target y: " << average_landing_center_position(1) << std::endl;
-        if(landing_enabled)
+        if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
         {
-          landing_condition_met_msg.data = true;
-          landing_condition_met_pub.publish(landing_condition_met_msg);
-
-          relanding_condition_met_msg.data = false;
-          relanding_condition_met_pub.publish(landing_condition_met_msg);
-          
-          relanding = false;
-
-          std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " landing enabled" << std::endl;
+            descend();       
+        }
+        else//not within the range
+        {
+          if(local_z < reland_height_min_threshold)
+          {
+            ascend();
+          }
+          else
+          {
+            hover();
+          }
         }
       }
-      else if((fabs(average_landing_center_position(0)) > reland_horizontal_threshold || fabs(average_landing_center_position(1)) > reland_horizontal_threshold) && fabs(average_landing_center_position(2)) < reland_height_min_threshold)//not close to the center at the horizontal plane but close enough at height
+      else//found_16h5 not found
       {
-        landing_condition_met_msg.data = false;
-        landing_condition_met_pub.publish(landing_condition_met_msg);
+        landing_threshold = 0.3;
+        if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
+        {
+         descend();
+        }
+        else
+        {
+          hover();
+        }
+      }
 
-        relanding_condition_met_msg.data = true;
-        relanding_condition_met_pub.publish(landing_condition_met_msg);
+      // //check whether the landing condition is met
+      // if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
+      // {
+      //   // std::cout << "local x: " << local_x << " target x: " << average_landing_center_position(0) << " local y: " << local_y << " target y: " << average_landing_center_position(1) << std::endl;
+      //   if(landing_enabled)
+      //   {
+      //     landing_condition_met_msg.data = true;
+      //     landing_condition_met_pub.publish(landing_condition_met_msg);
 
-        relanding = true;
+      //     relanding_condition_met_msg.data = false;
+      //     relanding_condition_met_pub.publish(landing_condition_met_msg);
+          
+      //     relanding = false;
 
-        std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " height: " << average_landing_center_position(2) << " landing enabled" << std::endl;
+      //     std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " landing enabled" << std::endl;
+      //   }
+      // }
+      // else if((fabs(average_landing_center_position(0)) > reland_horizontal_threshold || fabs(average_landing_center_position(1)) > reland_horizontal_threshold) && fabs(average_landing_center_position(2)) < reland_height_min_threshold)//not close to the center at the horizontal plane but close enough at height
+      // {
+      //   landing_condition_met_msg.data = false;
+      //   landing_condition_met_pub.publish(landing_condition_met_msg);
+
+      //   relanding_condition_met_msg.data = true;
+      //   relanding_condition_met_pub.publish(landing_condition_met_msg);
+
+      //   relanding = true;
+
+      //   std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " height: " << average_landing_center_position(2) << " landing enabled" << std::endl;
       
-      }
-      else
-      {
-        landing_condition_met_msg.data = false;
-        landing_condition_met_pub.publish(landing_condition_met_msg);
+      // }
+      // else
+      // {
+      //   landing_condition_met_msg.data = false;
+      //   landing_condition_met_pub.publish(landing_condition_met_msg);
 
-        relanding_condition_met_msg.data = false;
-        relanding_condition_met_pub.publish(landing_condition_met_msg);
-        std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << std::endl;
-      }
+      //   relanding_condition_met_msg.data = false;
+      //   relanding_condition_met_pub.publish(landing_condition_met_msg);
+      //   std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << std::endl;
+      // }
 
       yaw_state_msg.data = yaw_state;
       yaw_state_pub.publish(yaw_state_msg);
@@ -465,29 +530,44 @@ int main(int argc, char **argv)
     }
     else
     {
-      setpoint_x_msg.data = setpoint_x;
-      setpoint_y_msg.data = setpoint_y;
-      setpoint_yaw_msg.data = setpoint_yaw;
-      yaw_state_msg.data = 0;
 
-      if(local_z < absolute_reland_height_min_threshold || local_z < reland_height_max_threshold)
+      if(relanding)
       {
-        landing_condition_met_msg.data = false;
-        landing_condition_met_pub.publish(landing_condition_met_msg);
-
-        relanding_condition_met_msg.data = true;
-        relanding_condition_met_pub.publish(landing_condition_met_msg);
-        std::cout << "absolute reland" << std::endl;
+        if(local_z < reland_height_max_threshold)
+        {
+          ascend();
+        }
+        else
+        {
+          hover();
+        }
+      }
+      else
+      {
+        hover();
       }
 
+      if(first_start)
+      {
+        setpoint_x_msg.data = local_x;
+        setpoint_y_msg.data = local_y;
+        setpoint_yaw_msg.data = yaw_state;
+        yaw_state_msg.data = yaw_state;
+        
+      }
+      else
+      {
+        setpoint_x_msg.data = setpoint_x;
+        setpoint_y_msg.data = setpoint_y;
+        setpoint_yaw_msg.data = yaw_state;
+        yaw_state_msg.data = yaw_state;
+      }
 
       setpoint_x_pub.publish(setpoint_x_msg);
       setpoint_y_pub.publish(setpoint_y_msg);
       setpoint_yaw_pub.publish(setpoint_yaw_msg);
       yaw_state_pub.publish(yaw_state_msg);
     }
-
-    
 
     loop_rate.sleep();
   }

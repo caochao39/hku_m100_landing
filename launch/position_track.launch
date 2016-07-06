@@ -71,7 +71,7 @@
       <param name="diagnostic_period" value="0.25" />
       <param name="max_loop_frequency" value="105.0" />
       <param name="min_loop_frequency" value="95.0" />
-      <remap from="setpoint" to="/teamhku/position_track/filtered_setpoint_yaw" />
+      <remap from="setpoint" to="/teamhku/position_track/setpoint_yaw" />
       <param name="topic_from_plant" value="/teamhku/position_track/yaw_state" />
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_yaw" />
      </node>
