@@ -1,9 +1,8 @@
 <launch>
-    <node pkg="hku_m100_landing" type="position_track_state_publisher" name="position_track_state_publisher_node" >
+<!--     <node pkg="hku_m100_landing" type="position_track_state_publisher" name="position_track_state_publisher_node" >
     </node>
-
+ -->
       <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
-        
       </node>
 
     <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" >
@@ -13,7 +12,7 @@
       <param name="Kd" value="300" /> -->
       <param name="Kp" value="0.6" />
       <param name="Ki" value="0.2" />
-      <param name="Kd" value="80" />
+      <param name="Kd" value="120" />
       <param name="converge_threshold" value="0.05" />
       <param name="upper_limit" value="15" />
       <param name="lower_limit" value="-15" />
@@ -34,7 +33,7 @@
       <param name="Kd" value="300" /> -->
       <param name="Kp" value="0.6" />
       <param name="Ki" value="0.2" />
-      <param name="Kd" value="80" />
+      <param name="Kd" value="120" />
       <param name="converge_threshold" value="0.05" />
       <param name="upper_limit" value="15" />
       <param name="lower_limit" value="-15" />
@@ -51,6 +50,10 @@
     <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" >
       <param name="tag_36h11_detection_topic" value="/apriltags_ros/class_36h11/tag_detections" />
       <param name="tag_16h5_detection_topic" value="/apriltags_ros/class_16h5/tag_detections" />
+      <param name="landing_threshold_36h11" value="0.3" />
+      <param name="landing_threshold_16h5" value="0.1" />
+      <param name="reland_height_min_threshold" value="1.5" />
+      <param name="reland_height_max_threshold" value="2.5" />
     </node>
 
 

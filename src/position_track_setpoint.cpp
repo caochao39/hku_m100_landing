@@ -2,6 +2,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/UInt8.h>
 // #include <apriltags_ros/AprilTagDetection.h>
 // #include <apriltags_ros/AprilTagDetectionArray.h>
 #include <dji_sdk/Gimbal.h>
@@ -26,6 +27,7 @@ ros::Subscriber gimbal_ori_sub;
 ros::Subscriber local_position_sub;
 ros::Subscriber landing_enable_sub;
 ros::Subscriber attitude_quaternion_sub;
+ros::Subscriber flight_status_sub;
 
 ros::Publisher setpoint_x_pub;
 ros::Publisher setpoint_y_pub;
@@ -33,6 +35,9 @@ ros::Publisher setpoint_yaw_pub;
 ros::Publisher landing_condition_met_pub;
 ros::Publisher relanding_condition_met_pub;
 ros::Publisher yaw_state_pub;
+ros::Publisher x_state_pub;
+ros::Publisher y_state_pub;
+ros::Publisher z_state_pub;
 
 
 double gimbal_roll;
@@ -59,17 +64,22 @@ double setpoint_z = 0;
 double setpoint_yaw = 0;
 
 const int tag_16h5_num = 7;
-double landing_threshold = 0.1;
-double reland_horizontal_threshold = 0.3;
+double landing_threshold_36h11 = 0.3;
+double landing_threshold_16h5 = 0.1;
 double reland_height_min_threshold = 1.3;
 double reland_height_max_threshold = 2.5;
-double absolute_reland_height_min_threshold = 1.3;
 
 bool relanding = false;
+
+int flight_status;
 
 
 std_msgs::Bool landing_condition_met_msg;
 std_msgs::Bool relanding_condition_met_msg;
+
+std_msgs::Float64 x_state_msg;
+std_msgs::Float64 y_state_msg;
+std_msgs::Float64 z_state_msg;
 
 Tag *tag_36h11_6;
 
@@ -104,11 +114,9 @@ void apriltags36h11Callback(const apriltags::AprilTagDetections::ConstPtr& april
       if((*it).id == 6)
       {
         tag_36h11_6->updateTagState((*it).pose);
-
       }
       
     }
-
     found_36h11 = true;
 
   }
@@ -238,11 +246,15 @@ void attitudeQuaternionCallback(const dji_sdk::AttitudeQuaternion::ConstPtr& att
 }
 
 
-
 void landingEnableCallback(const std_msgs::Bool& landing_enable_msg)
 {
   landing_enabled = landing_enable_msg.data;
 
+}
+
+void flightStatusCallback(const std_msgs::UInt8& flight_status_msg)
+{
+  flight_status = (int)flight_status_msg.data;
 }
 
 void descend()
@@ -288,11 +300,22 @@ void hover()
   // std::cout << "hovering" << std::endl;
 }
 
+void print_parameters()
+{
+  ROS_INFO("Listening to 36h11 apriltag detection topic: %s", tag_36h11_detection_topic.c_str());
+  ROS_INFO("Listening to 16h5 apriltag detection topic: %s", tag_16h5_detection_topic.c_str());
+  ROS_INFO("landing_threshold_36h11: %f", landing_threshold_36h11);
+  ROS_INFO("landing_threshold_16h5: %f", landing_threshold_16h5);
+  ROS_INFO("reland_height_min_threshold: %f", reland_height_min_threshold);
+  ROS_INFO("reland_height_max_threshold: %f", reland_height_max_threshold);
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "position_track_setpoint_node");
   ROS_INFO("Starting position track setpoint publisher");
   ros::NodeHandle nh;
+  ros::NodeHandle node_priv("~");
 
   while (ros::Time(0) == ros::Time::now())
   {
@@ -300,11 +323,14 @@ int main(int argc, char **argv)
     sleep(1);
   }
 
-  nh.param<std::string>("/position_track_setpoint/tag_36h11_detection_topic", tag_36h11_detection_topic, "/apriltags/36h11/detections");
-  nh.param<std::string>("/position_track_setpoint/tag_16h5_detection_topic", tag_16h5_detection_topic, "/apriltags/16h5/detections");
-  ROS_INFO("Listening to 36h11 apriltag detection topic: %s", tag_36h11_detection_topic.c_str());
-  ROS_INFO("Listening to 16h5 apriltag detection topic: %s", tag_16h5_detection_topic.c_str());
+  node_priv.param<std::string>("tag_36h11_detection_topic", tag_36h11_detection_topic, "/apriltags/36h11/detections");
+  node_priv.param<std::string>("tag_16h5_detection_topic", tag_16h5_detection_topic, "/apriltags/16h5/detections");
+  node_priv.param<double>("landing_threshold_36h11", landing_threshold_36h11, 0.3);
+  node_priv.param<double>("landing_threshold_16h5", landing_threshold_16h5, 0.1);
+  node_priv.param<double>("reland_height_min_threshold", reland_height_min_threshold, 1.3);
+  node_priv.param<double>("reland_height_max_threshold", reland_height_max_threshold, 2.5);
 
+  print_parameters();
 
   setpoint_x_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_x", 10);
   setpoint_y_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/setpoint_y", 10);
@@ -312,14 +338,19 @@ int main(int argc, char **argv)
   landing_condition_met_pub = nh.advertise<std_msgs::Bool>("/teamhku/position_track/landing_condition_met", 10);
   relanding_condition_met_pub = nh.advertise<std_msgs::Bool>("/teamhku/position_track/relanding_condition_met", 10);
   yaw_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/yaw_state", 10);
-  
+  x_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/x_state", 10);
+  y_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/y_state", 10);
+  z_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/z_state", 10);
+
+
   apriltags_36h11_sub = nh.subscribe(tag_36h11_detection_topic, 1000, apriltags36h11Callback);
   apriltags_16h5_sub = nh.subscribe(tag_16h5_detection_topic, 1000, apriltags16h5Callback);
   gimbal_ori_sub = nh.subscribe("/dji_sdk/gimbal", 1000, gimbalOrientationCallback);
   local_position_sub = nh.subscribe("dji_sdk/local_position", 10, localPositionCallback);
   landing_enable_sub = nh.subscribe("/teamhku/position_track/landing_enable", 1, landingEnableCallback ); 
   attitude_quaternion_sub = nh.subscribe("/dji_sdk/attitude_quaternion", 1, attitudeQuaternionCallback ); 
-
+  flight_status_sub = nh.subscribe("/dji_sdk/flight_status", 1, flightStatusCallback);
+  
   for(int i = 0; i < tag_16h5_num; i++)
   {
     tags_16h5.push_back(new Tag());
@@ -338,9 +369,9 @@ int main(int argc, char **argv)
 
   //camera to gimbal transformation
   Eigen::Matrix3d camera_to_gimbal_transformation;
-    camera_to_gimbal_transformation << 0, 0, 1,
-                                       1, 0, 0,
-                                       0, 1, 0;
+  camera_to_gimbal_transformation << 0, 0, 1,
+                                     1, 0, 0,
+                                     0, 1, 0;
 
   Eigen::AngleAxisd yawAngle;
   Eigen::AngleAxisd pitchAngle;
@@ -380,6 +411,12 @@ int main(int argc, char **argv)
   {
     ros::spinOnce();
 
+    if(flight_status != 3)
+    {
+      continue;
+      // std::cout << flight_status << std::endl;
+    }
+
     if(found_16h5 || found_36h11)
     {
       first_start = false;
@@ -415,6 +452,7 @@ int main(int argc, char **argv)
           landing_center_position_sum += tag_36h11_6->getLandingCenterPosition();
 
         }
+
         average_landing_center_position = landing_center_position_sum / found_tag_count;
 
       //get the averaging landing center yaw error
@@ -434,6 +472,7 @@ int main(int argc, char **argv)
         }
       if(yaw_errors.size() > 0)
       {
+        //Take the median as an estimator
         std::sort (yaw_errors.begin(), yaw_errors.end());
         average_yaw_error = yaw_errors[found_tag_count / 2] / M_PI * 180;
       }
@@ -441,8 +480,7 @@ int main(int argc, char **argv)
       //landing logic
       if(found_16h5)
       {
-        landing_threshold = 0.1;
-        if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
+        if(fabs(average_landing_center_position(0)) < landing_threshold_16h5 && fabs(average_landing_center_position(1)) < landing_threshold_16h5)
         {
             descend();       
         }
@@ -460,8 +498,7 @@ int main(int argc, char **argv)
       }
       else//found_16h5 not found
       {
-        landing_threshold = 0.3;
-        if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
+        if(fabs(average_landing_center_position(0)) < landing_threshold_36h11 && fabs(average_landing_center_position(1)) < landing_threshold_36h11)
         {
          descend();
         }
@@ -471,48 +508,7 @@ int main(int argc, char **argv)
         }
       }
 
-      // //check whether the landing condition is met
-      // if(fabs(average_landing_center_position(0)) < landing_threshold && fabs(average_landing_center_position(1)) < landing_threshold)
-      // {
-      //   // std::cout << "local x: " << local_x << " target x: " << average_landing_center_position(0) << " local y: " << local_y << " target y: " << average_landing_center_position(1) << std::endl;
-      //   if(landing_enabled)
-      //   {
-      //     landing_condition_met_msg.data = true;
-      //     landing_condition_met_pub.publish(landing_condition_met_msg);
 
-      //     relanding_condition_met_msg.data = false;
-      //     relanding_condition_met_pub.publish(landing_condition_met_msg);
-          
-      //     relanding = false;
-
-      //     std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " landing enabled" << std::endl;
-      //   }
-      // }
-      // else if((fabs(average_landing_center_position(0)) > reland_horizontal_threshold || fabs(average_landing_center_position(1)) > reland_horizontal_threshold) && fabs(average_landing_center_position(2)) < reland_height_min_threshold)//not close to the center at the horizontal plane but close enough at height
-      // {
-      //   landing_condition_met_msg.data = false;
-      //   landing_condition_met_pub.publish(landing_condition_met_msg);
-
-      //   relanding_condition_met_msg.data = true;
-      //   relanding_condition_met_pub.publish(landing_condition_met_msg);
-
-      //   relanding = true;
-
-      //   std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << " height: " << average_landing_center_position(2) << " landing enabled" << std::endl;
-      
-      // }
-      // else
-      // {
-      //   landing_condition_met_msg.data = false;
-      //   landing_condition_met_pub.publish(landing_condition_met_msg);
-
-      //   relanding_condition_met_msg.data = false;
-      //   relanding_condition_met_pub.publish(landing_condition_met_msg);
-      //   std::cout << "error x: " << average_landing_center_position(0) << " error y: " << average_landing_center_position(1) << std::endl;
-      // }
-
-      yaw_state_msg.data = yaw_state;
-      yaw_state_pub.publish(yaw_state_msg);
 
       setpoint_yaw = yaw_state + average_yaw_error - 90;
       setpoint_yaw_msg.data = setpoint_yaw;
@@ -520,13 +516,24 @@ int main(int argc, char **argv)
 
       setpoint_x = average_landing_center_position(0) + local_x;
       setpoint_y = average_landing_center_position(1) + local_y;
-      // std::cout << "setpoing y: " << setpoint_y << " error y: " << average_landing_center_position(1) << " local y: " << local_y << std::endl;
 
       setpoint_x_msg.data = setpoint_x;
       setpoint_y_msg.data = setpoint_y;
 
       setpoint_x_pub.publish(setpoint_x_msg);
       setpoint_y_pub.publish(setpoint_y_msg);
+
+      yaw_state_msg.data = yaw_state;
+      yaw_state_pub.publish(yaw_state_msg);
+
+
+      x_state_msg.data = local_x;
+      y_state_msg.data = local_y;
+      z_state_msg.data = local_z;
+
+      x_state_pub.publish(x_state_msg); 
+      y_state_pub.publish(y_state_msg); 
+      z_state_pub.publish(z_state_msg); 
     }
     else
     {
@@ -567,6 +574,14 @@ int main(int argc, char **argv)
       setpoint_y_pub.publish(setpoint_y_msg);
       setpoint_yaw_pub.publish(setpoint_yaw_msg);
       yaw_state_pub.publish(yaw_state_msg);
+
+      x_state_msg.data = local_x;
+      y_state_msg.data = local_y;
+      z_state_msg.data = local_z;
+
+      x_state_pub.publish(x_state_msg); 
+      y_state_pub.publish(y_state_msg); 
+      z_state_pub.publish(z_state_msg); 
     }
 
     loop_rate.sleep();
