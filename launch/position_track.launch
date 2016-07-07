@@ -76,30 +76,4 @@
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_yaw" />
      </node>
 
-<!-- kalman filters -->
-    <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_x" output="screen">
-    <param name="input_topic" value="/teamhku/position_track/x_state" />
-    <param name="output_topic" value="/teamhku/position_track/filtered_x_state" />
-    <param name="Q" value="0.00001" />
-    <param name="R" value="0.01" />
-    <param name="x0" value="0" />
-    </node>
-
-    <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_y" output="screen">
-    <param name="input_topic" value="/teamhku/position_track/y_state" />
-    <param name="output_topic" value="/teamhku/position_track/filtered_y_state" />
-    <param name="Q" value="0.00001" />
-    <param name="R" value="0.01" />
-    <param name="x0" value="0" />
-    </node>
-
-
-    <node pkg="kalman_filter_ros" type="single_kalman" name="single_kalman_yaw" output="screen">
-    <param name="input_topic" value="/teamhku/position_track/setpoint_yaw" />
-    <param name="output_topic" value="/teamhku/position_track/filtered_setpoint_yaw" />
-    <param name="Q" value="0.001" />
-    <param name="R" value="1" />
-    <param name="x0" value="0" />
-    </node>
-
 </launch>
