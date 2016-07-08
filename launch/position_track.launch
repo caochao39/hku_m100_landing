@@ -1,18 +1,19 @@
 <launch>
-<!--     <node pkg="hku_m100_landing" type="position_track_state_publisher" name="position_track_state_publisher_node" >
-    </node>
- -->
+
       <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
       </node>
 
-    <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller" >
+    <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller">
       <param name="node_name" value="apriltag_tracking_x_controller" />
-<!--       <param name="Kp" value="6" />
+<!--       <param name="Kp" value="0.8" />
       <param name="Ki" value="0.3" />
       <param name="Kd" value="300" /> -->
-      <param name="Kp" value="0.6" />
-      <param name="Ki" value="0.2" />
-      <param name="Kd" value="120" />
+      <param name="Kp" value="0.9" />
+      <param name="Ki" value="0.3" />
+      <param name="Kd" value="50" />
+      <param name="P" value="1" />
+      <param name="Q" value="0.00005" />
+      <param name="R" value="1" />
       <param name="converge_threshold" value="0.05" />
       <param name="upper_limit" value="15" />
       <param name="lower_limit" value="-15" />
@@ -28,12 +29,15 @@
 
     <node ns="hku_m100_landing" name="position_track_pid_velocity_y_controller" pkg="pid" type="controller"  >
       <param name="node_name" value="apriltag_tracking_y_controller" />
-<!--       <param name="Kp" value="6" />
+<!--       <param name="Kp" value="0.8" />
       <param name="Ki" value="0.3" />
       <param name="Kd" value="300" /> -->
-      <param name="Kp" value="0.6" />
-      <param name="Ki" value="0.2" />
-      <param name="Kd" value="120" />
+      <param name="Kp" value="0.9" />
+      <param name="Ki" value="0.3" />
+      <param name="Kd" value="50" />
+      <param name="P" value="1" />
+      <param name="Q" value="0.00005" />
+      <param name="R" value="1" />
       <param name="converge_threshold" value="0.05" />
       <param name="upper_limit" value="15" />
       <param name="lower_limit" value="-15" />
@@ -57,12 +61,9 @@
     </node>
 
 
-
+<!-- 
     <node ns="hku_m100_landing" name="position_track_pid_yaw_controller" pkg="pid" type="controller" >
       <param name="node_name" value="apriltag_tracking_yaw_controller" />
-<!--       <param name="Kp" value="1" />
-      <param name="Ki" value="0.0" />
-      <param name="Kd" value="50" /> -->
       <param name="Kp" value="0.0" />
       <param name="Ki" value="0.0" />
       <param name="Kd" value="0.0" />
@@ -77,6 +78,6 @@
       <remap from="setpoint" to="/teamhku/position_track/setpoint_yaw" />
       <param name="topic_from_plant" value="/teamhku/position_track/yaw_state" />
       <param name="topic_from_controller" value="/teamhku/position_track/velocity_control_effort_yaw" />
-     </node>
+     </node> -->
 
 </launch>
