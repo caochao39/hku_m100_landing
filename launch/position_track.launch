@@ -53,8 +53,8 @@
     </node>
     
     <node name="position_track_setpoint" pkg="hku_m100_landing" type="position_track_setpoint" output="screen" >
-      <param name="tag_36h11_detection_topic" value="/apriltags_ros/class_36h11/tag_detections" />
-      <param name="tag_16h5_detection_topic" value="/apriltags_ros/class_16h5/tag_detections" />
+      <param name="tag_36h11_detection_topic" value="/apriltags/36h11/detections" />
+      <param name="tag_16h5_detection_topic" value="/apriltags/16h5/detections" />
       <param name="landing_threshold_36h11" value="0.3" />
       <param name="landing_threshold_16h5" value="0.1" />
       <param name="reland_height_min_threshold" value="1.5" />
