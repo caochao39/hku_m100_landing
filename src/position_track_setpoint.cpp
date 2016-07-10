@@ -21,7 +21,7 @@
 #include <algorithm>
 
 // #define APRILTAGS_ROS
-//#define APRILTAGS
+#define APRILTAGS
 
 ros::Subscriber apriltags_36h11_sub;
 ros::Subscriber apriltags_16h5_sub;
@@ -347,8 +347,8 @@ int main(int argc, char **argv)
   z_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/z_state", 10);
 
 
-  apriltags_36h11_sub = nh.subscribe(tag_36h11_detection_topic, 1000, apriltags36h11Callback);
-  apriltags_16h5_sub = nh.subscribe(tag_16h5_detection_topic, 1000, apriltags16h5Callback);
+  apriltags_36h11_sub = nh.subscribe(tag_36h11_detection_topic, 1, apriltags36h11Callback);
+  apriltags_16h5_sub = nh.subscribe(tag_16h5_detection_topic, 1, apriltags16h5Callback);
   gimbal_ori_sub = nh.subscribe("/dji_sdk/gimbal", 1000, gimbalOrientationCallback);
   local_position_sub = nh.subscribe("dji_sdk/local_position", 10, localPositionCallback);
   landing_enable_sub = nh.subscribe("/teamhku/position_track/landing_enable", 1, landingEnableCallback ); 
