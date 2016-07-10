@@ -3,11 +3,13 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
+#include <ros/console.h>
 // #include <apriltags_ros/AprilTagDetection.h>
 // #include <apriltags_ros/AprilTagDetectionArray.h>
 #include <dji_sdk/Gimbal.h>
 #include <dji_sdk/LocalPosition.h>
 #include <dji_sdk/AttitudeQuaternion.h>
+#include <dji_sdk/GlobalPosition.h>
 
 #include <tag.h>
 
@@ -28,6 +30,7 @@ ros::Subscriber local_position_sub;
 ros::Subscriber landing_enable_sub;
 ros::Subscriber attitude_quaternion_sub;
 ros::Subscriber flight_status_sub;
+ros::Subscriber global_position_sub;
 
 ros::Publisher setpoint_x_pub;
 ros::Publisher setpoint_y_pub;
@@ -47,6 +50,7 @@ double gimbal_pitch;
 double local_x;
 double local_y;
 double local_z;
+double flight_height;
 
 double error_yaw;
 
@@ -245,6 +249,10 @@ void attitudeQuaternionCallback(const dji_sdk::AttitudeQuaternion::ConstPtr& att
   yaw_state = atan2(2*(heading_q0 * heading_q3 + heading_q1 * heading_q2), 1 - 2 * (heading_q2 * heading_q2 + heading_q3 * heading_q3)) / M_PI * 180;
 }
 
+void globalPositionCallback(const dji_sdk::GlobalPosition::ConstPtr& global_position_msg)
+{
+  flight_height = global_position_msg->height;
+}
 
 void landingEnableCallback(const std_msgs::Bool& landing_enable_msg)
 {
@@ -269,6 +277,7 @@ void descend()
 
     relanding = false;
     // std::cout << "descending" << std::endl;
+    ROS_DEBUG_THROTTLE(2, "Descending");
   }
   
 }
@@ -284,6 +293,7 @@ void ascend()
     relanding_condition_met_pub.publish(relanding_condition_met_msg);
 
     relanding = true;
+    ROS_DEBUG_THROTTLE(2, "Ascending");
     // std::cout << "ascending" << std::endl;
   }
 }
@@ -317,12 +327,6 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle node_priv("~");
 
-  while (ros::Time(0) == ros::Time::now())
-  {
-    ROS_INFO("Setpoint_node spinning waiting for time to become non-zero");
-    sleep(1);
-  }
-
   node_priv.param<std::string>("tag_36h11_detection_topic", tag_36h11_detection_topic, "/apriltags/36h11/detections");
   node_priv.param<std::string>("tag_16h5_detection_topic", tag_16h5_detection_topic, "/apriltags/16h5/detections");
   node_priv.param<double>("landing_threshold_36h11", landing_threshold_36h11, 0.3);
@@ -350,6 +354,7 @@ int main(int argc, char **argv)
   landing_enable_sub = nh.subscribe("/teamhku/position_track/landing_enable", 1, landingEnableCallback ); 
   attitude_quaternion_sub = nh.subscribe("/dji_sdk/attitude_quaternion", 1, attitudeQuaternionCallback ); 
   flight_status_sub = nh.subscribe("/dji_sdk/flight_status", 1, flightStatusCallback);
+  global_position_sub = nh.subscribe("/dji_sdk/global_position", 10, globalPositionCallback);
   
   for(int i = 0; i < tag_16h5_num; i++)
   {
@@ -419,6 +424,7 @@ int main(int argc, char **argv)
 
     if(found_16h5 || found_36h11)
     {
+      ROS_DEBUG_ONCE("Setpoint node: Found Apriltag");
       first_start = false;
       yawAngle = Eigen::AngleAxisd(gimbal_yaw, Eigen::Vector3d::UnitZ());
       pitchAngle = Eigen::AngleAxisd(gimbal_pitch, Eigen::Vector3d::UnitY());
@@ -480,13 +486,14 @@ int main(int argc, char **argv)
       //landing logic
       if(found_16h5)
       {
+        ROS_DEBUG_ONCE("Setpoint node: Found 16h5 tags, entering fine tune state");
         if(fabs(average_landing_center_position(0)) < landing_threshold_16h5 && fabs(average_landing_center_position(1)) < landing_threshold_16h5)
         {
             descend();       
         }
         else//not within the range
         {
-          if(local_z < reland_height_min_threshold)
+          if(flight_height < reland_height_min_threshold)
           {
             ascend();
           }
@@ -508,8 +515,6 @@ int main(int argc, char **argv)
         }
       }
 
-
-
       setpoint_yaw = yaw_state + average_yaw_error - 90;
       setpoint_yaw_msg.data = setpoint_yaw;
       setpoint_yaw_pub.publish(setpoint_yaw_msg);
@@ -529,7 +534,11 @@ int main(int argc, char **argv)
 
       x_state_msg.data = local_x;
       y_state_msg.data = local_y;
-      z_state_msg.data = local_z;
+      z_state_msg.data = flight_height;
+      if(flight_height < 0)
+      {
+        ROS_DEBUG_THROTTLE(1, "Setpoint node: Flight height is negative, go to hell DJI");
+      }
 
       x_state_pub.publish(x_state_msg); 
       y_state_pub.publish(y_state_msg); 
@@ -540,7 +549,7 @@ int main(int argc, char **argv)
 
       if(relanding)
       {
-        if(local_z < reland_height_max_threshold)
+        if(flight_height < reland_height_max_threshold)
         {
           ascend();
         }
@@ -577,7 +586,7 @@ int main(int argc, char **argv)
 
       x_state_msg.data = local_x;
       y_state_msg.data = local_y;
-      z_state_msg.data = local_z;
+      z_state_msg.data = flight_height;
 
       x_state_pub.publish(x_state_msg); 
       y_state_pub.publish(y_state_msg); 

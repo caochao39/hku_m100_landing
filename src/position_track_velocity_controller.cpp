@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <ros/console.h>
+
 #include <vector>
 #include <iterator>
 #include <string>
@@ -12,7 +14,6 @@
 #include <std_msgs/Bool.h>
 
 #include <geometry_msgs/PoseArray.h>
-
 #include <cmath>
 #include <iostream>
 
@@ -99,7 +100,7 @@ int main(int argc, char **argv)
 
 	while(!(sdk_permission_control_service.call(sdk_permission_control) && sdk_permission_control.response.result))
 	{
-		ROS_ERROR("request control failed!");
+		ROS_ERROR("Velocity controller: request control failed!");
 	}
 
 	while(ros::ok())
@@ -110,6 +111,7 @@ int main(int argc, char **argv)
 		{
 			if(landing_condition_met)
 			{
+				ROS_DEBUG_ONCE("Velocity controller: Landing condition met, going down");
 				velocity_control.request.frame = frame;
 				velocity_control.request.vx = velocity_control_effort_x;
 				velocity_control.request.vy = velocity_control_effort_y;
@@ -118,11 +120,12 @@ int main(int argc, char **argv)
 
 				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
 				{
-					ROS_ERROR("velocity control failed!");
+					ROS_ERROR("Velocity controller: velocity control failed!");
 				}
 			}
 			else if(relanding_condition_met)
 			{
+				ROS_DEBUG_ONCE("Velocity controller: Relanding condition met, going up");
 				velocity_control.request.frame = frame;
 				velocity_control.request.vx = velocity_control_effort_x;
 				velocity_control.request.vy = velocity_control_effort_y;
@@ -131,11 +134,12 @@ int main(int argc, char **argv)
 
 				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
 				{
-					ROS_ERROR("velocity control failed!");
+					ROS_ERROR("Velocity controller: velocity control failed!");
 				}
 			}
 			else
 			{
+				ROS_DEBUG_THROTTLE(3, "Velocity controller: Received control effort, flying the drone");
 				velocity_control.request.frame = frame;
 				velocity_control.request.vx = velocity_control_effort_x;
 				velocity_control.request.vy = velocity_control_effort_y;
@@ -144,7 +148,7 @@ int main(int argc, char **argv)
 
 				if(!(velocity_control_service.call(velocity_control) && velocity_control.response.result))
 				{
-					ROS_ERROR("velocity control failed!");
+					ROS_ERROR("Velocity controller: velocity control failed!");
 				}
 			}
 			

@@ -34,12 +34,6 @@ int main(int argc, char **argv)
 
 	ros::NodeHandle nh;
 
-	while (ros::Time(0) == ros::Time::now())
-	{
-		ROS_INFO("position_track_state_publisher spinning waiting for time to become non-zero");
-		sleep(1);
-	}
-
 	local_position_sub = nh.subscribe<dji_sdk::LocalPosition>("dji_sdk/local_position", 10, localPosCallback);
 
 	x_state_pub = nh.advertise<std_msgs::Float64>("/teamhku/position_track/x_state", 10);

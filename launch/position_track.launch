@@ -1,6 +1,6 @@
 <launch>
 
-      <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" >
+      <node pkg="hku_m100_landing" type="position_track_velocity_controller" name="position_track_velocity_controller_node" output="screen">
       </node>
 
     <node ns="hku_m100_landing" name="position_track_pid_velocity_x_controller" pkg="pid" type="controller">
@@ -14,6 +14,7 @@
       <param name="P" value="1" />
       <param name="Q" value="0.00005" />
       <param name="R" value="1" />
+      <param name="/use_sim_time" value="false" />
       <param name="converge_threshold" value="0.05" />
       <param name="upper_limit" value="15" />
       <param name="lower_limit" value="-15" />
